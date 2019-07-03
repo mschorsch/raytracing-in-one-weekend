@@ -1,0 +1,7 @@
+[package]
+name = "raytracer-in-one-week"
+version = "0.1.0"
+authors = ["Matthias Schorsch <matthias.schorsch@gmx.de>"]
+edition = "2018"
+
+[dependencies]
