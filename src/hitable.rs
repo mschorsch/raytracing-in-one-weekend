@@ -50,8 +50,9 @@ impl Hitable for Sphere {
         let c = (ray.origin - self.center).dot(&(ray.origin - self.center))
             - (self.radius * self.radius);
         let discriminant: f32 = b * b - 4.0 * a * c;
+
         if discriminant > 0.0 {
-            let temp = (-b - (b * b - 4.0 * a * c).sqrt()) / (2.0 * a); // midnight formula => wrong in pdf
+            let temp = (-b - discriminant.sqrt()) / (2.0 * a); // midnight formula => wrong in pdf
             if temp < t_max && temp > t_min {
                 let t = temp;
                 let p = ray.point_at_parameter(t);
@@ -59,7 +60,7 @@ impl Hitable for Sphere {
                 return Some(Hit::new(t, p, normal, self.material.box_clone()));
             }
 
-            let temp = (-b + (b * b - 4.0 * a * c).sqrt()) / (2.0 * a); // midnight formula => wrong in pdf
+            let temp = (-b + discriminant.sqrt()) / (2.0 * a); // midnight formula => wrong in pdf
             if temp < t_max && temp > t_min {
                 let t = temp;
                 let p = ray.point_at_parameter(t);
@@ -116,6 +117,6 @@ mod tests {
         let world = World::new(hitables);
 
         let r = Ray::new(Vec3(0.0, 0.0, 0.0), Vec3(0.0, 0.0, -1.0));
-        assert_eq!(world.hit(&r, 0.0, 1.0), None);
+        assert!(world.hit(&r, 0.0, 1.0).is_none());
     }
 }

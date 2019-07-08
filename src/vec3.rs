@@ -161,6 +161,14 @@ impl ops::Div<f32> for Vec3 {
     }
 }
 
+impl ops::Neg for Vec3 {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Vec3(-self.0, -self.1, -self.2)
+    }
+}
+
 impl<'a> ops::AddAssign<&'a Vec3> for Vec3 {
     fn add_assign(&mut self, rhs: &'a Vec3) {
         self.0 += rhs.0;
@@ -212,7 +220,6 @@ impl ops::DivAssign<f32> for Vec3 {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]
