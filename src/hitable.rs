@@ -31,18 +31,18 @@ impl Sphere {
 }
 
 impl Hitable for Sphere {
-    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
         // ax^2 + bx + c = 0
-        let a = r.direction.dot(&r.direction);
-        let b = 2.0 * r.direction.dot(&(r.origin - self.center));
-        let c =
-            (r.origin - self.center).dot(&(r.origin - self.center)) - (self.radius * self.radius);
+        let a = ray.direction.dot(&ray.direction);
+        let b = 2.0 * ray.direction.dot(&(ray.origin - self.center));
+        let c = (ray.origin - self.center).dot(&(ray.origin - self.center))
+            - (self.radius * self.radius);
         let discriminant: f32 = b * b - 4.0 * a * c;
         if discriminant > 0.0 {
             let temp = (-b - (b * b - 4.0 * a * c).sqrt()) / (2.0 * a); // midnight formula => wrong in pdf
             if temp < t_max && temp > t_min {
                 let t = temp;
-                let p = r.point_at_parameter(t);
+                let p = ray.point_at_parameter(t);
                 let normal = (p - self.center) / self.radius; // normal unit vector?
                 return Some(Hit::new(t, p, normal));
             }
@@ -50,7 +50,7 @@ impl Hitable for Sphere {
             let temp = (-b + (b * b - 4.0 * a * c).sqrt()) / (2.0 * a); // midnight formula => wrong in pdf
             if temp < t_max && temp > t_min {
                 let t = temp;
-                let p = r.point_at_parameter(t);
+                let p = ray.point_at_parameter(t);
                 let normal = (p - self.center) / self.radius; // normal unit vector?
                 return Some(Hit::new(t, p, normal));
             }
@@ -70,11 +70,11 @@ impl World {
 }
 
 impl Hitable for World {
-    fn hit(&self, r: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
         let mut hit_anything = None;
         let mut closest_so_far = t_max;
         for hitable in &self.hitables {
-            if let Some(hit) = hitable.hit(r, t_min, closest_so_far) {
+            if let Some(hit) = hitable.hit(ray, t_min, closest_so_far) {
                 hit_anything = Some(hit);
                 closest_so_far = hit.t;
             }
@@ -105,7 +105,6 @@ impl Hitable for World {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]
@@ -118,14 +117,4 @@ mod tests {
         let r = Ray::new(Vec3(0.0, 0.0, 0.0), Vec3(0.0, 0.0, -1.0));
         assert_eq!(world.hit(&r, 0.0, 1.0), None);
     }
-
-    // #[test]
-    // fn test_hitable_vec() {
-    //     let s1 = Sphere::new(Vec3(0.0, 0.0, 0.0), 1.0);
-    //     let s2 = Sphere::new(Vec3(0.0, 0.0, 0.0), 2.0);
-    //     let v: Vec<Sphere> = vec![s1, s2];
-
-    //     let r = Ray::new(Vec3(0.0, 0.0, 0.0), Vec3(0.0, 0.0, -1.0));
-    //     assert_eq!(v.hit(&r, 0.0, 1.0), None);
-    // }
 }
