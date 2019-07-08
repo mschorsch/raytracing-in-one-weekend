@@ -3,20 +3,21 @@
 
 extern crate rand;
 
-mod camera;
-mod hitable;
-mod ray;
-mod vec3;
-
-use rand::prelude::*;
 use std::fs;
 use std::io;
 use std::io::prelude::*;
+
+use rand::prelude::*;
 
 use crate::camera::Camera;
 use crate::hitable::{Hit, Hitable, Sphere, World};
 use crate::ray::Ray;
 use crate::vec3::{unit_vector, Vec3};
+
+mod camera;
+mod hitable;
+mod ray;
+mod vec3;
 
 // image size
 const NX: u32 = 200;
@@ -47,9 +48,10 @@ fn main() -> io::Result<()> {
                 let ray = camera.get_ray(u, v);
 
                 // let p = r.point_at_parameter(2.0); // 2.0??
-                col += &color(&ray, &world);
+                col += &color(&ray, &world, &mut rng);
             }
             col /= NS as f32;
+            col = Vec3(col.0.sqrt(), col.1.sqrt(), col.2.sqrt()); // gamma correction "gamma 2"
 
             let ir = (255.99 * col.0) as u32;
             let ig = (255.99 * col.1) as u32;
@@ -62,22 +64,30 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn color(ray: &Ray, world: &World) -> Vec3 {
+fn random_in_unit_sphere(rng: &mut ThreadRng) -> Vec3 {
+    loop {
+        let p =
+            2.0 * Vec3(rng.gen::<f32>(), rng.gen::<f32>(), rng.gen::<f32>()) - Vec3(1.0, 1.0, 1.0);
+        if p.squared_length() < 1.0 {
+            return p;
+        }
+    }
+}
+
+fn color(ray: &Ray, world: &World, rng: &mut ThreadRng) -> Vec3 {
     use std::f32;
 
-    if let Some(hit) = world.hit(ray, 0.0, f32::MAX) {
+    if let Some(hit) = world.hit(ray, 0.001, f32::MAX) {
+        // 0.001; ignore heats very near zero
+        let target = hit.p + hit.normal + random_in_unit_sphere(rng);
+
         // scale to 0 <= x <= 1
-        0.5 * Vec3(
-            hit.normal.x() + 1.0,
-            hit.normal.y() + 1.0,
-            hit.normal.z() + 1.0,
-        )
+        0.5 * color(&Ray::new(hit.p, target - hit.p), world, rng)
     } else {
         // linear blend; linear interpolation; lerp
         // blended_value = (1-t)*start_value + t*end_value
         let unit_direction = unit_vector(ray.direction); // unit vector -1 <= x <= 1
         let t = 0.5 * (unit_direction.y() + 1.0); // scale to 0 <= x <= 1
-                                                  // blend blue to white
         (1.0 - t) * Vec3(1.0, 1.0, 1.0) /* white */ + t * Vec3(0.5, 0.7, 1.0) /* blue */
     }
 }
