@@ -3,6 +3,7 @@
 
 extern crate rand;
 
+use std::f32::consts::{FRAC_PI_4, PI};
 use std::fs;
 use std::io;
 use std::io::prelude::*;
@@ -34,6 +35,16 @@ fn main() -> io::Result<()> {
 
     let mut rng = thread_rng(); // random number generator; standard distribution [0, 1)
 
+    // Camera
+    let camera = Camera::new(
+        Vec3(-2.0, 2.0, 1.0),
+        Vec3(0.0, 0.0, -1.0),
+        Vec3(0.0, 1.0, 0.0),
+        90.0,
+        NX as f32 / NY as f32,
+    );
+
+    // World
     let world = World::new(vec![
         Box::new(Sphere::new(
             Vec3(0.0, 0.0, -1.0),
@@ -61,8 +72,6 @@ fn main() -> io::Result<()> {
             Dielectric::new(1.5),
         )),
     ]);
-
-    let camera = Camera::new();
 
     for j in (0..NY).rev() {
         for i in 0..NX {
