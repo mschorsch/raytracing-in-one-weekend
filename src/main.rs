@@ -36,12 +36,19 @@ fn main() -> io::Result<()> {
     let mut rng = thread_rng(); // random number generator; standard distribution [0, 1)
 
     // Camera
+    let lookfrom = Vec3(3.0, 3.0, 2.0);
+    let lookat = Vec3(0.0, 0.0, -1.0);
+    let dist_to_focus = (lookfrom - lookat).length();
+    let aperture = 2.0;
+
     let camera = Camera::new(
-        Vec3(-2.0, 2.0, 1.0),
-        Vec3(0.0, 0.0, -1.0),
+        lookfrom,
+        lookat,
         Vec3(0.0, 1.0, 0.0),
-        90.0,
+        20.0,
         NX as f32 / NY as f32,
+        aperture,
+        dist_to_focus,
     );
 
     // World
@@ -79,9 +86,8 @@ fn main() -> io::Result<()> {
             for _ in 0..NS {
                 let u = (i as f32 + rng.gen::<f32>()/* 0 <= x < 1 */) / NX as f32;
                 let v = (j as f32 + rng.gen::<f32>()/* 0 <= x < 1 */) / NY as f32;
-                let ray = camera.get_ray(u, v);
+                let ray = camera.get_ray(&mut rng, u, v);
 
-                // let p = r.point_at_parameter(2.0); // 2.0??
                 col += &color(&ray, &world, &mut rng, 0);
             }
             col /= NS as f32;
@@ -101,7 +107,7 @@ fn main() -> io::Result<()> {
 fn color(ray: &Ray, world: &World, rng: &mut ThreadRng, depth: u32) -> Vec3 {
     use std::f32;
 
-    // 0.001; ignore heats very near zero
+    // 0.001; ignore hits very near zero
     if let Some(hit) = world.hit(ray, 0.001, f32::MAX) {
         if depth >= 50 {
             return Vec3(0.0, 0.0, 0.0);
