@@ -3,15 +3,15 @@ use crate::ray::Ray;
 use crate::vec3::Vec3;
 
 #[derive(Debug)]
-pub struct Hit {
+pub struct Hit<'a> {
     pub t: f32,
     pub p: Vec3,
     pub normal: Vec3,
-    pub material: Box<Material>,
+    pub material: &'a Material,
 }
 
-impl Hit {
-    pub fn new(t: f32, p: Vec3, normal: Vec3, material: Box<Material>) -> Self {
+impl<'a> Hit<'a> {
+    pub fn new(t: f32, p: Vec3, normal: Vec3, material: &'a Material) -> Self {
         Hit {
             t,
             p,
@@ -26,23 +26,27 @@ pub trait Hitable {
 }
 
 #[derive(Debug)]
-pub struct Sphere {
+pub struct Sphere<M: Material> {
     pub center: Vec3,
     pub radius: f32,
-    pub material: Box<Material>,
+    pub material: M,
 }
 
-impl Sphere {
-    pub fn new<M: Material + 'static>(center: Vec3, radius: f32, material: M) -> Self {
+impl<M: Material> Sphere<M> {
+    pub fn new(center: Vec3, radius: f32, material: M) -> Self {
         Sphere {
             center,
             radius,
-            material: Box::new(material),
+            material,
         }
+    }
+
+    pub fn into_box(self) -> Box<Self> {
+        Box::new(self)
     }
 }
 
-impl Hitable for Sphere {
+impl<M: Material> Hitable for Sphere<M> {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
         // ax^2 + bx + c = 0
         let a = ray.direction.dot(&ray.direction);
@@ -52,20 +56,19 @@ impl Hitable for Sphere {
         let discriminant: f32 = b * b - 4.0 * a * c;
 
         if discriminant > 0.0 {
-            let temp = (-b - discriminant.sqrt()) / (2.0 * a); // midnight formula => wrong in pdf
-            if temp < t_max && temp > t_min {
-                let t = temp;
+            let discriminant_squared = discriminant.sqrt();
+            let t = (-b - discriminant_squared) / (2.0 * a); // midnight formula => wrong in pdf
+            if t < t_max && t > t_min {
                 let p = ray.point_at_parameter(t);
                 let normal = (p - self.center) / self.radius; // normal unit vector?
-                return Some(Hit::new(t, p, normal, self.material.box_clone()));
+                return Some(Hit::new(t, p, normal, &self.material));
             }
 
-            let temp = (-b + discriminant.sqrt()) / (2.0 * a); // midnight formula => wrong in pdf
-            if temp < t_max && temp > t_min {
-                let t = temp;
+            let t = (-b + discriminant_squared) / (2.0 * a); // midnight formula => wrong in pdf
+            if t < t_max && t > t_min {
                 let p = ray.point_at_parameter(t);
                 let normal = (p - self.center) / self.radius; // normal unit vector?
-                return Some(Hit::new(t, p, normal, self.material.box_clone()));
+                return Some(Hit::new(t, p, normal, &self.material));
             }
         }
         None

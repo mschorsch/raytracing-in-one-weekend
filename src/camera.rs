@@ -1,13 +1,12 @@
-use crate::ray::Ray;
-use crate::vec3::{unit_vector, Vec3};
-
 use rand::prelude::*;
-use std::convert::TryInto;
-use std::f32::consts::PI;
+
+use crate::ray::Ray;
+use crate::vec3::Vec3;
 
 struct OrthoPlane {
     u: Vec3,
     v: Vec3,
+    #[allow(dead_code)]
     w: Vec3,
 }
 
@@ -37,8 +36,8 @@ impl Camera {
 
         let origin = lookfrom;
         // orthonarmal basis
-        let w = unit_vector(lookfrom - lookat); // -w!!!
-        let u = unit_vector(vup.cross(&w));
+        let w = (lookfrom - lookat).normalized(); // -w!!!
+        let u = (vup.cross(&w)).normalized();
         let v = w.cross(&u); // w x u because we have -w and a x b = -b x a
 
         let lower_left_corner =

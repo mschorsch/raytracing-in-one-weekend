@@ -4,43 +4,53 @@ use std::ops;
 pub struct Vec3(pub f32, pub f32, pub f32);
 
 impl Vec3 {
+    #[inline(always)]
     pub fn x(&self) -> f32 {
         self.0
     }
 
+    #[inline(always)]
     pub fn y(&self) -> f32 {
         self.1
     }
 
+    #[inline(always)]
     pub fn z(&self) -> f32 {
         self.2
     }
 
+    #[inline(always)]
     pub fn r(&self) -> f32 {
         self.0
     }
 
+    #[inline(always)]
     pub fn g(&self) -> f32 {
         self.1
     }
 
+    #[inline(always)]
     pub fn b(&self) -> f32 {
         self.2
     }
 
-    pub fn length(&self) -> f32 {
-        self.squared_length().sqrt()
+    #[inline(always)]
+    pub fn magnitude(&self) -> f32 {
+        self.magnitude_squared().sqrt()
     }
 
-    pub fn squared_length(&self) -> f32 {
+    #[inline(always)]
+    pub fn magnitude_squared(&self) -> f32 {
         self.0 * self.0 + self.1 * self.1 + self.2 * self.2
     }
 
+    #[inline(always)]
     pub fn dot(&self, other: &Vec3) -> f32 {
         // scalar product
         self.0 * other.0 + self.1 * other.1 + self.2 * other.2
     }
 
+    #[inline(always)]
     pub fn cross(&self, other: &Vec3) -> Vec3 {
         // cross product
         let x = self.1 * other.2 - self.2 * other.1;
@@ -49,16 +59,10 @@ impl Vec3 {
         Vec3(x, y, z)
     }
 
-    pub fn make_unit_vector(&mut self) {
-        let k = 1_f32 / self.length();
-        self.0 *= k;
-        self.1 *= k;
-        self.2 *= k;
+    #[inline(always)]
+    pub fn normalized(self) -> Vec3 {
+        self / self.magnitude()
     }
-}
-
-pub fn unit_vector(v: Vec3) -> Vec3 {
-    v / v.length()
 }
 
 //
@@ -215,17 +219,5 @@ impl ops::DivAssign<f32> for Vec3 {
         self.0 *= k;
         self.1 *= k;
         self.2 *= k;
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_make_unit_vector() {
-        //        let mut v = Vec3::new(2.0, 3.0, 1.0);
-        //        v.make_unit_vector();
-        //        assert_eq!(v, Vec3::new(1.0, 1.0, 1.0))
     }
 }
