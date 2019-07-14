@@ -1,4 +1,4 @@
-use crate::vec3::Vec3;
+use crate::Vec3;
 
 // half-line or ray
 #[derive(Debug, Clone, Copy, PartialEq)]

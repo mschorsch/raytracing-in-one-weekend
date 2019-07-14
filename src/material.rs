@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use crate::hitable::Hit;
 use crate::ray::Ray;
-use crate::vec3::Vec3;
+use crate::Vec3;
 
 #[derive(Debug)]
 pub struct Scatter {
@@ -42,8 +42,8 @@ impl Material for Lambertian {
 
 fn random_in_unit_sphere(rng: &mut ThreadRng) -> Vec3 {
     loop {
-        let p =
-            2.0 * Vec3(rng.gen::<f32>(), rng.gen::<f32>(), rng.gen::<f32>()) - Vec3(1.0, 1.0, 1.0);
+        let p = 2.0 * Vec3::new(rng.gen::<f32>(), rng.gen::<f32>(), rng.gen::<f32>())
+            - Vec3::new(1.0, 1.0, 1.0);
         if p.magnitude_squared() < 1.0 {
             return p;
         }
@@ -71,13 +71,13 @@ impl Metal {
 
 impl Material for Metal {
     fn scatter(&self, ray_in: &Ray, hit: &Hit, rng: &mut ThreadRng) -> Option<Scatter> {
-        let reflected = reflect((ray_in.direction).normalized(), &hit.normal);
+        let reflected = reflect((ray_in.direction).normalized(), hit.normal);
         let scattered = Ray::new(
             hit.p,
             reflected + self.fuzziness * random_in_unit_sphere(rng),
         );
         let attenuation = self.albedo;
-        if scattered.direction.dot(&hit.normal) > 0.0 {
+        if scattered.direction.dot(hit.normal) > 0.0 {
             Some(Scatter {
                 scattered,
                 attenuation,
@@ -88,7 +88,7 @@ impl Material for Metal {
     }
 }
 
-fn reflect(v: Vec3, normal: &Vec3) -> Vec3 {
+fn reflect(v: Vec3, normal: Vec3) -> Vec3 {
     v - 2.0 * v.dot(normal) * normal
 }
 
@@ -108,34 +108,33 @@ impl Material for Dielectric {
         let outward_normal;
         let ni_over_nt: f32;
         let cosine: f32;
-        if ray_in.direction.dot(&hit.normal) > 0.0 {
+        if ray_in.direction.dot(hit.normal) > 0.0 {
             // spitzer Winkel!
             outward_normal = -hit.normal;
             ni_over_nt = self.ref_idx;
-            cosine =
-                self.ref_idx * ray_in.direction.dot(&hit.normal) / ray_in.direction.magnitude();
+            cosine = self.ref_idx * ray_in.direction.dot(hit.normal) / ray_in.direction.magnitude();
         } else {
             outward_normal = hit.normal;
             ni_over_nt = 1.0 / self.ref_idx;
-            cosine = -ray_in.direction.dot(&hit.normal) / ray_in.direction.magnitude();
+            cosine = -ray_in.direction.dot(hit.normal) / ray_in.direction.magnitude();
         }
 
         let scattered: Ray;
-        if let Some(refracted) = refract(ray_in.direction, &outward_normal, ni_over_nt) {
+        if let Some(refracted) = refract(ray_in.direction, outward_normal, ni_over_nt) {
             let reflect_prob = schlick(cosine, self.ref_idx);
 
             if rng.gen::<f32>() < reflect_prob {
-                let reflected = reflect(ray_in.direction, &hit.normal);
+                let reflected = reflect(ray_in.direction, hit.normal);
                 scattered = Ray::new(hit.p, reflected);
             } else {
                 scattered = Ray::new(hit.p, refracted);
             }
         } else {
-            let reflected = reflect(ray_in.direction, &hit.normal);
+            let reflected = reflect(ray_in.direction, hit.normal);
             scattered = Ray::new(hit.p, reflected);
         }
 
-        let attenuation = Vec3(1.0, 1.0, 1.0);
+        let attenuation = Vec3::new(1.0, 1.0, 1.0);
 
         Some(Scatter {
             scattered,
@@ -150,13 +149,13 @@ fn schlick(cosine: f32, ref_idx: f32) -> f32 {
     r0 + (1.0 - r0) * (1.0 - cosine).powi(5)
 }
 
-fn refract(v: Vec3, normal: &Vec3, ni_over_nt: f32) -> Option<Vec3> /* refracted */ {
+fn refract(v: Vec3, normal: Vec3, ni_over_nt: f32) -> Option<Vec3> /* refracted */ {
     let uv = v.normalized();
     let dt = uv.dot(normal);
     let discriminant = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt); // TODO don't understand this
 
     if discriminant > 0.0 {
-        let refracted = ni_over_nt * (uv - *normal * dt) - *normal * discriminant.sqrt(); //??
+        let refracted = ni_over_nt * (uv - normal * dt) - normal * discriminant.sqrt(); //??
         Some(refracted)
     } else {
         None

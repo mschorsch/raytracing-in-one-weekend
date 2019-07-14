@@ -1,7 +1,7 @@
 use rand::prelude::*;
 
 use crate::ray::Ray;
-use crate::vec3::Vec3;
+use crate::Vec3;
 
 struct OrthoPlane {
     u: Vec3,
@@ -37,8 +37,8 @@ impl Camera {
         let origin = lookfrom;
         // orthonarmal basis
         let w = (lookfrom - lookat).normalized(); // -w!!!
-        let u = (vup.cross(&w)).normalized();
-        let v = w.cross(&u); // w x u because we have -w and a x b = -b x a
+        let u = (vup.cross(w)).normalized();
+        let v = w.cross(u); // w x u because we have -w and a x b = -b x a
 
         let lower_left_corner =
             origin - half_width * focus_dist * u - half_height * focus_dist * v - focus_dist * w;
@@ -59,7 +59,7 @@ impl Camera {
 
     pub fn get_ray(&self, rng: &mut ThreadRng, s: f32, t: f32) -> Ray {
         let rd = self.lens_radius * random_in_unit_disk(rng);
-        let offset = self.plane.u * rd.x() + self.plane.v * rd.y();
+        let offset = self.plane.u * rd.x + self.plane.v * rd.y;
         Ray::new(
             self.origin + offset,
             self.lower_left_corner + s * self.horizontal + t * self.vertical - self.origin - offset,
@@ -69,8 +69,8 @@ impl Camera {
 
 fn random_in_unit_disk(rng: &mut ThreadRng) -> Vec3 {
     loop {
-        let p = 2.0 * Vec3(rng.gen::<f32>(), rng.gen::<f32>(), 0.0) - Vec3(1.0, 1.0, 0.0);
-        if p.dot(&p) < 1.0 {
+        let p = 2.0 * Vec3::new(rng.gen::<f32>(), rng.gen::<f32>(), 0.0) - Vec3::new(1.0, 1.0, 0.0);
+        if p.dot(p) < 1.0 {
             return p;
         }
     }

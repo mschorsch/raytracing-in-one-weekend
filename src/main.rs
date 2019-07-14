@@ -1,4 +1,5 @@
 extern crate rand;
+extern crate vek;
 
 use std::fs;
 use std::io;
@@ -10,18 +11,18 @@ use crate::camera::Camera;
 use crate::hitable::{Hitable, Sphere, World};
 use crate::material::{Dielectric, Lambertian, Metal};
 use crate::ray::Ray;
-use crate::vec3::Vec3;
 
 mod camera;
 mod hitable;
 mod material;
 mod ray;
-mod vec3;
 
 // image size
 const NX: u32 = 1200;
 const NY: u32 = 800;
 const NS: u32 = 100;
+
+pub type Vec3 = vek::Vec3<f32>;
 
 fn main() -> io::Result<()> {
     let mut file = fs::File::create("image.ppm")?;
@@ -32,15 +33,15 @@ fn main() -> io::Result<()> {
     let mut rng = thread_rng(); // random number generator; standard distribution [0, 1)
 
     // Camera
-    let lookfrom = Vec3(13.0, 2.0, 3.0);
-    let lookat = Vec3(0.0, 0.0, 0.0);
+    let lookfrom = Vec3::new(13.0, 2.0, 3.0);
+    let lookat = Vec3::new(0.0, 0.0, 0.0);
     let dist_to_focus = 10.0; //(lookfrom - lookat).length();
     let aperture = 0.1;
 
     let camera = Camera::new(
         lookfrom,
         lookat,
-        Vec3(0.0, 1.0, 0.0),
+        Vec3::new(0.0, 1.0, 0.0),
         20.0,
         NX as f32 / NY as f32,
         aperture,
@@ -52,20 +53,20 @@ fn main() -> io::Result<()> {
 
     for j in (0..NY).rev() {
         for i in 0..NX {
-            let mut col = Vec3(0.0, 0.0, 0.0);
+            let mut col = Vec3::new(0.0, 0.0, 0.0);
             for _ in 0..NS {
                 let u = (i as f32 + rng.gen::<f32>()/* 0 <= x < 1 */) / NX as f32;
                 let v = (j as f32 + rng.gen::<f32>()/* 0 <= x < 1 */) / NY as f32;
                 let ray = camera.get_ray(&mut rng, u, v);
 
-                col += &color(&ray, &world, &mut rng, 0);
+                col += color(&ray, &world, &mut rng, 0);
             }
             col /= NS as f32;
-            col = Vec3(col.0.sqrt(), col.1.sqrt(), col.2.sqrt()); // gamma correction "gamma 2"
+            col = Vec3::new(col.x.sqrt(), col.y.sqrt(), col.z.sqrt()); // gamma correction "gamma 2"
 
-            let ir = (255.99 * col.0) as u32;
-            let ig = (255.99 * col.1) as u32;
-            let ib = (255.99 * col.2) as u32;
+            let ir = (255.99 * col.x) as u32;
+            let ig = (255.99 * col.y) as u32;
+            let ib = (255.99 * col.z) as u32;
 
             writeln!(file, "{} {} {}", ir, ig, ib)?;
         }
@@ -79,9 +80,9 @@ fn random_scene(rng: &mut ThreadRng) -> World {
     let mut list: Vec<Box<Hitable>> = Vec::with_capacity(n + 1);
     list.push(
         Sphere::new(
-            Vec3(0.0, -1000.0, 0.0),
+            Vec3::new(0.0, -1000.0, 0.0),
             1000.0,
-            Lambertian::new(Vec3(0.5, 0.5, 0.5)),
+            Lambertian::new(Vec3::new(0.5, 0.5, 0.5)),
         )
         .into_box(),
     );
@@ -89,19 +90,19 @@ fn random_scene(rng: &mut ThreadRng) -> World {
     for a in -11..11 {
         for b in -11..11 {
             let choose_mat = rng.gen::<f32>();
-            let center = Vec3(
+            let center = Vec3::new(
                 a as f32 + rng.gen::<f32>() * 0.9,
                 0.2,
                 b as f32 + rng.gen::<f32>() * 0.9,
             );
-            if (center - Vec3(4.0, 0.2, 0.0)).magnitude() > 0.9 {
+            if (center - Vec3::new(4.0, 0.2, 0.0)).magnitude() > 0.9 {
                 if choose_mat < 0.8 {
                     /* diffuse */
                     list.push(
                         Sphere::new(
                             center,
                             0.2,
-                            Lambertian::new(Vec3(
+                            Lambertian::new(Vec3::new(
                                 rng.gen::<f32>() * rng.gen::<f32>(),
                                 rng.gen::<f32>() * rng.gen::<f32>(),
                                 rng.gen::<f32>() * rng.gen::<f32>(),
@@ -116,7 +117,7 @@ fn random_scene(rng: &mut ThreadRng) -> World {
                             center,
                             0.2,
                             Metal::with_fuzziness(
-                                Vec3(
+                                Vec3::new(
                                     0.5 * (1.0 + rng.gen::<f32>()),
                                     0.5 * (1.0 + rng.gen::<f32>()),
                                     0.5 * (1.0 + rng.gen::<f32>()),
@@ -134,16 +135,23 @@ fn random_scene(rng: &mut ThreadRng) -> World {
         }
     }
 
-    list.push(Sphere::new(Vec3(0.0, 1.0, 0.0), 1.0, Dielectric::new(1.5)).into_box());
+    list.push(Sphere::new(Vec3::new(0.0, 1.0, 0.0), 1.0, Dielectric::new(1.5)).into_box());
     list.push(
         Sphere::new(
-            Vec3(-4.0, 1.0, 0.0),
+            Vec3::new(-4.0, 1.0, 0.0),
             1.0,
-            Lambertian::new(Vec3(0.4, 0.2, 0.1)),
+            Lambertian::new(Vec3::new(0.4, 0.2, 0.1)),
         )
         .into_box(),
     );
-    list.push(Sphere::new(Vec3(4.0, 1.0, 0.0), 1.0, Metal::new(Vec3(0.7, 0.6, 0.5))).into_box());
+    list.push(
+        Sphere::new(
+            Vec3::new(4.0, 1.0, 0.0),
+            1.0,
+            Metal::new(Vec3::new(0.7, 0.6, 0.5)),
+        )
+        .into_box(),
+    );
 
     World::new(list)
 }
@@ -154,19 +162,19 @@ fn color(ray: &Ray, world: &World, rng: &mut ThreadRng, depth: u32) -> Vec3 {
     // 0.001; ignore hits very near zero
     if let Some(hit) = world.hit(ray, 0.001, f32::MAX) {
         if depth >= 50 {
-            return Vec3(0.0, 0.0, 0.0);
+            return Vec3::new(0.0, 0.0, 0.0);
         }
 
         if let Some(scatter) = hit.material.scatter(ray, &hit, rng) {
             scatter.attenuation * color(&scatter.scattered, world, rng, depth + 1)
         } else {
-            Vec3(0.0, 0.0, 0.0)
+            Vec3::new(0.0, 0.0, 0.0)
         }
     } else {
         // linear blend; linear interpolation; lerp
         // blended_value = (1-t)*start_value + t*end_value
         let unit_direction = (ray.direction).normalized(); // unit vector -1 <= x <= 1
-        let t = 0.5 * (unit_direction.y() + 1.0); // scale to 0 <= x <= 1
-        (1.0 - t) * Vec3(1.0, 1.0, 1.0) /* white */ + t * Vec3(0.5, 0.7, 1.0) /* blue */
+        let t = 0.5 * (unit_direction.y + 1.0); // scale to 0 <= x <= 1
+        (1.0 - t) * Vec3::new(1.0, 1.0, 1.0) /* white */ + t * Vec3::new(0.5, 0.7, 1.0) /* blue */
     }
 }

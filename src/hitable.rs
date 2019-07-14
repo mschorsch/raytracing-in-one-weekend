@@ -1,6 +1,6 @@
 use crate::material::Material;
 use crate::ray::Ray;
-use crate::vec3::Vec3;
+use crate::Vec3;
 
 #[derive(Debug)]
 pub struct Hit<'a> {
@@ -49,10 +49,10 @@ impl<M: Material> Sphere<M> {
 impl<M: Material> Hitable for Sphere<M> {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
         // ax^2 + bx + c = 0
-        let a = ray.direction.dot(&ray.direction);
-        let b = 2.0 * ray.direction.dot(&(ray.origin - self.center));
-        let c = (ray.origin - self.center).dot(&(ray.origin - self.center))
-            - (self.radius * self.radius);
+        let a = ray.direction.dot(ray.direction);
+        let b = 2.0 * ray.direction.dot(ray.origin - self.center);
+        let c =
+            (ray.origin - self.center).dot(ray.origin - self.center) - (self.radius * self.radius);
         let discriminant: f32 = b * b - 4.0 * a * c;
 
         if discriminant > 0.0 {
@@ -107,19 +107,19 @@ mod tests {
     #[test]
     fn test_world() {
         let s1 = Sphere::new(
-            Vec3(0.0, 0.0, 0.0),
+            Vec3::new(0.0, 0.0, 0.0),
             1.0,
-            Lambertian::new(Vec3(1.0, 0.0, 0.0)),
+            Lambertian::new(Vec3::new(1.0, 0.0, 0.0)),
         );
         let s2 = Sphere::new(
-            Vec3(0.0, 0.0, 0.0),
+            Vec3::new(0.0, 0.0, 0.0),
             2.0,
-            Lambertian::new(Vec3(1.0, 0.0, 0.0)),
+            Lambertian::new(Vec3::new(1.0, 0.0, 0.0)),
         );
         let hitables: Vec<Box<Hitable>> = vec![Box::new(s1), Box::new(s2)];
         let world = World::new(hitables);
 
-        let r = Ray::new(Vec3(0.0, 0.0, 0.0), Vec3(0.0, 0.0, -1.0));
+        let r = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, -1.0));
         assert!(world.hit(&r, 0.0, 1.0).is_none());
     }
 }
